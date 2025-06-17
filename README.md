@@ -107,15 +107,3 @@ sql2diagram follows a systematic approach to convert SQL into diagrams:
 - Saves the generated D2 code to the specified output file
 - The D2 file can then be rendered using the D2 CLI tool to create SVG, PNG, or other visual formats
 
-### Architecture
-
-The tool is built with a modular architecture:
-
-- **Core Package**: Defines interfaces and data structures
-- **SQL Simulator**: Handles database instance management (PostgreSQL)
-- **Schema Builder**: Extracts schema information from the database
-- **Diagram Builder**: Converts schema to D2 format
-- **Migration Builder**: Handles file reading and SQL preparation
-
-This design allows for easy extension to support additional database types and diagram formats in the future.
-
