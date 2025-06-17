@@ -2,88 +2,18 @@ package core
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"path/filepath"
 
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/jmoiron/sqlx"
 )
 
 type PostgresSim struct {
-	glob *string
-	SqlFiles      []string
-	Sql           *string
+	dbConnection *sqlx.DB
+	pgInstance   *embeddedpostgres.EmbeddedPostgres
 }
 
 func NewPostgresSim() *PostgresSim {
 	return &PostgresSim{}
-}
-
-func (p *PostgresSim) UseGlob(glob string) *PostgresSim {
-	p.glob = &glob
-	return p
-}
-
-func (p *PostgresSim) UseSqlFile(sqlFile string) *PostgresSim {
-	p.SqlFiles = append(p.SqlFiles, sqlFile)
-	return p
-}
-
-func (p *PostgresSim) UseSql(sql string) *PostgresSim {
-	p.Sql = &sql
-	return p
-}
-
-func (p *PostgresSim) Validate() error {
-	// If multiple sources of sql are provided error out
-	count := 0
-	if p.glob != nil {
-		count++
-	}
-	if len(p.SqlFiles) > 0 {
-		count++
-	}
-	if p.Sql != nil {
-		count++
-	}
-
-	if count > 1 {
-		return fmt.Errorf("only one of MigrationsDir, SqlFile, or Sql can be provided")
-	} else if count == 0 {
-		return fmt.Errorf("one of MigrationsDir, SqlFile, or Sql must be provided")
-	}
-	return nil
-}
-
-func (p PostgresSim) getSql() (string, error) {
-	sql := ""
-	if p.Sql != nil {
-		sql = *p.Sql
-	} else if len(p.SqlFiles) > 0 {
-		for _, sqlFile := range p.SqlFiles {
-			fmt.Printf("Reading %s\n", sqlFile)
-			sqlFile, err := os.ReadFile(sqlFile)
-			if err != nil {
-				return "", err
-			}
-			sql += string(sqlFile) + "\n\n"
-		}
-	} else if p.glob != nil {
-		files, err := filepath.Glob(*p.glob)
-		if err != nil {
-			return "", err
-		}
-		for _, file := range files {
-			fmt.Printf("Reading %s\n", file)
-			sqlFile, err := os.ReadFile(file)
-			if err != nil {
-				return "", err
-			}
-			sql += string(sqlFile) + "\n\n"
-		}
-	}
-	return sql, nil
 }
 
 func (p PostgresSim) connectToDB() (*sqlx.DB, error) {
@@ -91,57 +21,98 @@ func (p PostgresSim) connectToDB() (*sqlx.DB, error) {
 	return db, err
 }
 
-func (p PostgresSim) Run() error {
-	if err := p.Validate(); err != nil {
-		return err
-	}
-	sql, err := p.getSql()
-	if err != nil {
-		return err
+func (p *PostgresSim) StartSQLSim(migration string) (cleanup func(), err error) {
+	if migration == "" {
+		return nil, fmt.Errorf("migration string must be provided")
 	}
 
-	fmt.Printf("Making New DB\n")
-	db := embeddedpostgres.NewDatabase(
+	pgDB := embeddedpostgres.NewDatabase(
 		embeddedpostgres.DefaultConfig().Port(2489).Username("postgres_sim").Password("postgres_sim").Database("postgres_sim"),
 	)
-	fmt.Printf("Starting DB\n")
-	if err := db.Start(); err != nil {
-		return err
+	if err := pgDB.Start(); err != nil {
+		return nil, err
 	}
-	defer func() {
-		fmt.Printf("Stopping DB\n")
-		if err := db.Stop(); err != nil {
-			log.Fatal(err)
-		}
-	}()
+	p.pgInstance = pgDB
 
-	fmt.Printf("Connecting to DB\n")
 	conn, err := p.connectToDB()
 	if err != nil {
-		return err
+		pgDB.Stop()
+		return nil, err
+	}
+	p.dbConnection = conn
+
+	if _, err := conn.Exec(migration); err != nil {
+		conn.Close()
+		pgDB.Stop()
+		return nil, err
 	}
 
-	fmt.Printf("Running migrations\n")
-	if _, err := conn.Exec(sql); err != nil {
-		return err
-	}
+	cleanup = func() { _ = p.EndSQLSim() }
+	return cleanup, nil
+}
 
-	// List the tables
-	fmt.Printf("Listing tables\n")
-	tables, err := conn.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+func (p *PostgresSim) ExecuteSQL(sql string) (result any, err error) {
+	// For SELECT queries, we need to use Query, not Exec
+	rows, err := p.dbConnection.Query(sql)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	fmt.Printf("Traversing tables\n")
-	for tables.Next() {
-		var tableName string
-		err = tables.Scan(&tableName)
-		if err != nil {
+	defer rows.Close()
+
+	// Get column names
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	// Prepare result slice
+	var results [][]interface{}
+
+	// Process each row
+	for rows.Next() {
+		// Create a slice to hold values for this row
+		values := make([]interface{}, len(columns))
+		valuePtrs := make([]interface{}, len(columns))
+
+		// Create pointers to the values
+		for i := range values {
+			valuePtrs[i] = &values[i]
+		}
+
+		// Scan the row into the value pointers
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return nil, err
+		}
+
+		// Convert byte arrays to strings for better handling
+		for i, val := range values {
+			if b, ok := val.([]byte); ok {
+				values[i] = string(b)
+			}
+		}
+
+		results = append(results, values)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+func (p *PostgresSim) EndSQLSim() error {
+	if p.dbConnection != nil {
+		if err := p.dbConnection.Close(); err != nil {
 			return err
 		}
-		fmt.Printf("Table: %s\n", tableName)
+		p.dbConnection = nil
 	}
-	fmt.Printf("Done bro\n")
-
+	if p.pgInstance != nil {
+		if err := p.pgInstance.Stop(); err != nil {
+			return err
+		}
+		p.pgInstance = nil
+	}
 	return nil
 }
