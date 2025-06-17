@@ -13,12 +13,16 @@ sql2diagram analyzes SQL migration files and automatically generates database di
 
 The tool uses an embedded PostgreSQL instance to parse and validate your SQL, then extracts the schema information to generate D2 diagrams that can be rendered as SVG, PNG, or viewed interactively.
 
-**Supported Features:**
+**Currently Supported:**
 - PostgreSQL SQL syntax
 - D2 diagram generation
 - Glob pattern support for multiple migration files
 - Automatic relationship detection
 - Constraint visualization
+
+**Current Limitations:**
+- Only PostgreSQL SQL dialect is supported
+- Only D2 diagramming tool is supported
 
 ## How to Run
 
@@ -106,4 +110,25 @@ sql2diagram follows a systematic approach to convert SQL into diagrams:
 ### 5. **Output**
 - Saves the generated D2 code to the specified output file
 - The D2 file can then be rendered using the D2 CLI tool to create SVG, PNG, or other visual formats
+
+## Roadmap
+
+### SQL Database Support
+- [x] **PostgreSQL** - Support for PostgreSQL database schema parsing
+- [ ] **SQLite** - Support for SQLite database schema parsing
+- [ ] **MySQL** - Support for MySQL database schema parsing
+- [ ] **SQL Server** - Support for Microsoft SQL Server schema parsing
+- [ ] **Oracle** - Support for Oracle database schema parsing
+
+### Diagramming Tools
+- [x] **D2** - Generate D2 diagrams (currently supported)
+- [ ] **Mermaid** - Generate Mermaid entity relationship diagrams
+- [ ] **PlantUML** - Support for PlantUML database diagrams
+- [ ] **Graphviz** - Generate DOT files for Graphviz rendering
+
+### Additional Features
+- Support for views and stored procedures
+- Enhanced constraint visualization
+- Custom styling and theming options
+- Interactive web-based diagram viewer
 
