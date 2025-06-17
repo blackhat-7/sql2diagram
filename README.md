@@ -43,7 +43,7 @@ go build -o sql2diagram
 ./sql2diagram schema.sql
 
 # Generate diagram from multiple migration files using glob pattern
-./sql2diagram "migrations/*.sql"
+./sql2diagram "migrations/*.up.sql"
 
 # Specify custom output path
 ./sql2diagram schema.sql -o diagrams/my-schema.d2
@@ -52,7 +52,7 @@ go build -o sql2diagram
 ./sql2diagram schema.sql -s postgres
 
 # Full example with all options
-./sql2diagram "migrations/*.sql" -o output/schema.d2 -s postgres -d d2
+./sql2diagram "migrations/*.up.sql" -o output/schema.d2 -s postgres -d d2
 ```
 
 ### Command Line Options
