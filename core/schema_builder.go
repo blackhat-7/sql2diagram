@@ -57,7 +57,7 @@ ORDER BY c.table_schema, c.table_name, c.ordinal_position;`
 
 func (p *PostgresSQLSchemaBuilder) parseQueryResult(result any) Schema {
 	// Assuming result is a slice of rows, where each row is a slice of values
-	rows, ok := result.([][]interface{})
+	rows, ok := result.([][]any)
 	if !ok {
 		fmt.Printf("Unexpected result format\n")
 		return Schema{}
