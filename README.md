@@ -6,6 +6,8 @@ A command-line tool that generates database diagrams from SQL migration files. C
 
 sql2diagram analyzes SQL migration files and automatically generates database diagrams that visualize:
 
+![Example E-commerce Schema Diagram](examples/ecommerce.png)
+
 - **Tables** with their columns and data types
 - **Primary Keys (PK)** and **Foreign Keys (FK)** 
 - **Constraints** (UNIQUE, NOT NULL, DEFAULT values)

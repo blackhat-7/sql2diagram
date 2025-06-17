@@ -1,0 +1,269 @@
+categories: {
+	shape: sql_table
+	category_id: integer { constraint: [Not Null; Default: nextval('categories_category_id_seq'::regclass); Primary Key] }
+	name: character varying { constraint: [Not Null; Unique] }
+	description: text
+	parent_category_id: integer { constraint: [Foreign Key to categories.category_id] }
+	image_url: character varying
+	is_active: boolean { constraint: [Default: true] }
+	sort_order: integer { constraint: [Default: 0] }
+}
+inventory: {
+	shape: sql_table
+	inventory_id: integer { constraint: [Not Null; Default: nextval('inventory_inventory_id_seq'::regclass); Primary Key] }
+	product_id: integer { constraint: [Not Null; Unique; Foreign Key to products.product_id] }
+	quantity_in_stock: integer { constraint: [Not Null; Default: 0] }
+	reserved_quantity: integer { constraint: [Default: 0] }
+	reorder_level: integer { constraint: [Default: 10] }
+	max_stock_level: integer
+	last_restocked_at: timestamp without time zone
+	updated_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+}
+shipping_addresses: {
+	shape: sql_table
+	address_id: integer { constraint: [Not Null; Default: nextval('shipping_addresses_address_id_seq'::regclass); Primary Key] }
+	user_id: integer { constraint: [Not Null; Foreign Key to users.user_id] }
+	address_line1: character varying { constraint: [Not Null] }
+	address_line2: character varying
+	city: character varying { constraint: [Not Null] }
+	state: character varying
+	postal_code: character varying { constraint: [Not Null] }
+	country: character varying { constraint: [Not Null; Default: 'US'::character varying] }
+	is_default: boolean { constraint: [Default: false] }
+	address_type: character varying { constraint: [Default: 'shipping'::character varying] }
+}
+user_profiles: {
+	shape: sql_table
+	profile_id: integer { constraint: [Not Null; Default: nextval('user_profiles_profile_id_seq'::regclass); Primary Key] }
+	user_id: integer { constraint: [Not Null; Foreign Key to users.user_id; Unique] }
+	first_name: character varying
+	last_name: character varying
+	phone: character varying
+	date_of_birth: date
+	gender: character varying
+	bio: text
+	avatar_url: character varying
+	preferred_language: character varying { constraint: [Default: 'en'::character varying] }
+}
+users: {
+	shape: sql_table
+	user_id: integer { constraint: [Not Null; Default: nextval('users_user_id_seq'::regclass); Primary Key] }
+	username: character varying { constraint: [Not Null; Unique] }
+	email: character varying { constraint: [Not Null; Unique] }
+	password_hash: character varying { constraint: [Not Null] }
+	created_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+	updated_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+	is_active: boolean { constraint: [Default: true] }
+	last_login: timestamp without time zone
+	email_verified: boolean { constraint: [Default: false] }
+}
+wishlist_items: {
+	shape: sql_table
+	wishlist_item_id: integer { constraint: [Not Null; Default: nextval('wishlist_items_wishlist_item_id_seq'::regclass); Primary Key] }
+	wishlist_id: integer { constraint: [Not Null; Unique; Foreign Key to wishlists.wishlist_id] }
+	product_id: integer { constraint: [Not Null; Unique; Foreign Key to products.product_id] }
+	added_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+	notes: text
+}
+discounts: {
+	shape: sql_table
+	discount_id: integer { constraint: [Not Null; Default: nextval('discounts_discount_id_seq'::regclass); Primary Key] }
+	code: character varying { constraint: [Not Null; Unique] }
+	description: text
+	discount_type: character varying { constraint: [Not Null] }
+	discount_value: numeric { constraint: [Not Null] }
+	minimum_order_amount: numeric { constraint: [Default: 0] }
+	maximum_discount_amount: numeric
+	usage_limit: integer
+	used_count: integer { constraint: [Default: 0] }
+	valid_from: timestamp without time zone { constraint: [Not Null] }
+	valid_until: timestamp without time zone { constraint: [Not Null] }
+	is_active: boolean { constraint: [Default: true] }
+}
+product_reviews: {
+	shape: sql_table
+	review_id: integer { constraint: [Not Null; Default: nextval('product_reviews_review_id_seq'::regclass); Primary Key] }
+	product_id: integer { constraint: [Not Null; Unique; Foreign Key to products.product_id] }
+	user_id: integer { constraint: [Not Null; Unique; Foreign Key to users.user_id] }
+	rating: integer { constraint: [Not Null] }
+	title: character varying
+	content: text
+	is_verified_purchase: boolean { constraint: [Default: false] }
+	helpful_count: integer { constraint: [Default: 0] }
+	created_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+}
+products: {
+	shape: sql_table
+	product_id: integer { constraint: [Not Null; Default: nextval('products_product_id_seq'::regclass); Primary Key] }
+	name: character varying { constraint: [Not Null] }
+	description: text
+	category_id: integer { constraint: [Not Null; Foreign Key to categories.category_id] }
+	supplier_id: integer { constraint: [Foreign Key to suppliers.supplier_id] }
+	sku: character varying { constraint: [Not Null; Unique] }
+	price: numeric { constraint: [Not Null] }
+	cost_price: numeric
+	weight: numeric
+	dimensions: character varying
+	color: character varying
+	size: character varying
+	material: character varying
+	is_active: boolean { constraint: [Default: true] }
+	featured: boolean { constraint: [Default: false] }
+	created_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+	updated_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+}
+audit_logs: {
+	shape: sql_table
+	log_id: integer { constraint: [Not Null; Default: nextval('audit_logs_log_id_seq'::regclass); Primary Key] }
+	table_name: character varying { constraint: [Not Null] }
+	record_id: integer { constraint: [Not Null] }
+	action: character varying { constraint: [Not Null] }
+	old_values: jsonb
+	new_values: jsonb
+	user_id: integer { constraint: [Foreign Key to users.user_id] }
+	ip_address: inet
+	user_agent: text
+	created_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+}
+order_items: {
+	shape: sql_table
+	order_item_id: integer { constraint: [Not Null; Default: nextval('order_items_order_item_id_seq'::regclass); Primary Key] }
+	order_id: integer { constraint: [Not Null; Foreign Key to orders.order_id] }
+	product_id: integer { constraint: [Not Null; Foreign Key to products.product_id] }
+	quantity: integer { constraint: [Not Null] }
+	unit_price: numeric { constraint: [Not Null] }
+	total_price: numeric { constraint: [Not Null] }
+	discount_amount: numeric { constraint: [Default: 0] }
+}
+orders: {
+	shape: sql_table
+	order_id: integer { constraint: [Not Null; Default: nextval('orders_order_id_seq'::regclass); Primary Key] }
+	user_id: integer { constraint: [Not Null; Foreign Key to users.user_id] }
+	order_number: character varying { constraint: [Not Null; Unique] }
+	status: character varying { constraint: [Default: 'pending'::character varying] }
+	total_amount: numeric { constraint: [Not Null] }
+	tax_amount: numeric { constraint: [Default: 0] }
+	shipping_amount: numeric { constraint: [Default: 0] }
+	discount_amount: numeric { constraint: [Default: 0] }
+	shipping_address_id: integer { constraint: [Foreign Key to shipping_addresses.address_id] }
+	billing_address_id: integer { constraint: [Foreign Key to shipping_addresses.address_id] }
+	notes: text
+	created_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+	updated_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+	shipped_at: timestamp without time zone
+	delivered_at: timestamp without time zone
+}
+shopping_carts: {
+	shape: sql_table
+	cart_id: integer { constraint: [Not Null; Default: nextval('shopping_carts_cart_id_seq'::regclass); Primary Key] }
+	user_id: integer { constraint: [Not Null; Unique; Foreign Key to users.user_id] }
+	product_id: integer { constraint: [Not Null; Unique; Foreign Key to products.product_id] }
+	quantity: integer { constraint: [Not Null; Default: 1] }
+	added_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+}
+suppliers: {
+	shape: sql_table
+	supplier_id: integer { constraint: [Not Null; Default: nextval('suppliers_supplier_id_seq'::regclass); Primary Key] }
+	company_name: character varying { constraint: [Not Null] }
+	contact_person: character varying
+	email: character varying
+	phone: character varying
+	address: text
+	city: character varying
+	country: character varying
+	postal_code: character varying
+	rating: numeric
+	is_active: boolean { constraint: [Default: true] }
+}
+user_discounts: {
+	shape: sql_table
+	user_discount_id: integer { constraint: [Not Null; Default: nextval('user_discounts_user_discount_id_seq'::regclass); Primary Key] }
+	user_id: integer { constraint: [Not Null; Foreign Key to users.user_id; Unique] }
+	discount_id: integer { constraint: [Not Null; Foreign Key to discounts.discount_id; Unique] }
+	order_id: integer { constraint: [Foreign Key to orders.order_id; Unique] }
+	used_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+}
+wishlists: {
+	shape: sql_table
+	wishlist_id: integer { constraint: [Not Null; Default: nextval('wishlists_wishlist_id_seq'::regclass); Primary Key] }
+	user_id: integer { constraint: [Not Null; Foreign Key to users.user_id] }
+	name: character varying { constraint: [Not Null; Default: 'My Wishlist'::character varying] }
+	description: text
+	is_public: boolean { constraint: [Default: false] }
+	created_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+}
+notifications: {
+	shape: sql_table
+	notification_id: integer { constraint: [Not Null; Default: nextval('notifications_notification_id_seq'::regclass); Primary Key] }
+	user_id: integer { constraint: [Not Null; Foreign Key to users.user_id] }
+	type: character varying { constraint: [Not Null] }
+	title: character varying { constraint: [Not Null] }
+	message: text { constraint: [Not Null] }
+	is_read: boolean { constraint: [Default: false] }
+	related_order_id: integer { constraint: [Foreign Key to orders.order_id] }
+	related_product_id: integer { constraint: [Foreign Key to products.product_id] }
+	created_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+	read_at: timestamp without time zone
+}
+payments: {
+	shape: sql_table
+	payment_id: integer { constraint: [Not Null; Default: nextval('payments_payment_id_seq'::regclass); Primary Key] }
+	order_id: integer { constraint: [Not Null; Foreign Key to orders.order_id] }
+	amount: numeric { constraint: [Not Null] }
+	payment_method: character varying { constraint: [Not Null] }
+	payment_status: character varying { constraint: [Default: 'pending'::character varying] }
+	transaction_id: character varying
+	gateway_response: text
+	processed_at: timestamp without time zone
+	created_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+}
+product_images: {
+	shape: sql_table
+	image_id: integer { constraint: [Not Null; Default: nextval('product_images_image_id_seq'::regclass); Primary Key] }
+	product_id: integer { constraint: [Not Null; Foreign Key to products.product_id] }
+	image_url: character varying { constraint: [Not Null] }
+	alt_text: character varying
+	is_primary: boolean { constraint: [Default: false] }
+	sort_order: integer { constraint: [Default: 0] }
+}
+supplier_products: {
+	shape: sql_table
+	supplier_product_id: integer { constraint: [Not Null; Default: nextval('supplier_products_supplier_product_id_seq'::regclass); Primary Key] }
+	supplier_id: integer { constraint: [Not Null; Foreign Key to suppliers.supplier_id; Unique] }
+	product_id: integer { constraint: [Not Null; Unique; Foreign Key to products.product_id] }
+	supplier_sku: character varying
+	cost_price: numeric
+	lead_time_days: integer { constraint: [Default: 7] }
+	minimum_order_quantity: integer { constraint: [Default: 1] }
+	is_preferred: boolean { constraint: [Default: false] }
+	created_at: timestamp without time zone { constraint: [Default: CURRENT_TIMESTAMP] }
+}
+categories.parent_category_id -> categories.category_id
+inventory.product_id -> products.product_id
+shipping_addresses.user_id -> users.user_id
+user_profiles.user_id -> users.user_id
+wishlist_items.wishlist_id -> wishlists.wishlist_id
+wishlist_items.product_id -> products.product_id
+product_reviews.product_id -> products.product_id
+product_reviews.user_id -> users.user_id
+products.category_id -> categories.category_id
+products.supplier_id -> suppliers.supplier_id
+audit_logs.user_id -> users.user_id
+order_items.order_id -> orders.order_id
+order_items.product_id -> products.product_id
+orders.user_id -> users.user_id
+orders.shipping_address_id -> shipping_addresses.address_id
+orders.billing_address_id -> shipping_addresses.address_id
+shopping_carts.user_id -> users.user_id
+shopping_carts.product_id -> products.product_id
+user_discounts.user_id -> users.user_id
+user_discounts.discount_id -> discounts.discount_id
+user_discounts.order_id -> orders.order_id
+wishlists.user_id -> users.user_id
+notifications.user_id -> users.user_id
+notifications.related_order_id -> orders.order_id
+notifications.related_product_id -> products.product_id
+payments.order_id -> orders.order_id
+product_images.product_id -> products.product_id
+supplier_products.supplier_id -> suppliers.supplier_id
+supplier_products.product_id -> products.product_id
