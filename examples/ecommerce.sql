@@ -1,5 +1,5 @@
 -- E-commerce Database Schema Showcase
--- This file demonstrates various SQL features for the sql2d2 project
+-- This file demonstrates various SQL features for the sql2diagram project
 
 -- Users table - main user accounts
 CREATE TABLE users (
